@@ -6,6 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/lib/pq"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -20,7 +21,14 @@ type MyItem struct {
 	Shop  string  `db:"shop"`
 }
 
+func MainHandler(resp http.ResponseWriter, _ *http.Request) {
+	resp.Write([]byte("Hi there! I'm DndSpellsBot!"))
+}
+
 func main() {
+	http.HandleFunc("/", MainHandler)
+	go http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+
 	sqlURL := os.Getenv("DATABASE_URL")
 	if sqlURL == "" {
 		panic("empty DATABASE_URL")
@@ -80,8 +88,8 @@ func StartBot() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates := bot.GetUpdatesChan(u)
-
+	//updates := bot.GetUpdatesChan(u)
+	updates := bot.ListenForWebhook("/" + bot.Token)
 	for update := range updates {
 		if update.Message == nil {
 			continue
