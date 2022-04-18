@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
@@ -41,10 +42,10 @@ func main() {
 }
 
 var keyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Найти колу")))
+	tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Найти колу"), tgbotapi.NewKeyboardButton("Все магазины")))
 
 func findMin() string {
-	rows, err := db.Query("select product.name, product.price, product.shop from product " +
+	rows, err := db.Query("select product.name, product.price, product.shop, product.update_time from product " +
 		"inner join (select DISTINCT min(priceperliter) as minprice from product) minprices " +
 		"on product.priceperliter = minprices.minprice " +
 		"where product.sugar = false order by product.cap")
@@ -53,9 +54,10 @@ func findMin() string {
 	}
 	defer rows.Close()
 	items := make([]MyItem, 0)
+	var updateTime time.Time
 	for rows.Next() {
 		var item MyItem
-		err = rows.Scan(&item.Name, &item.Price, &item.Shop)
+		err = rows.Scan(&item.Name, &item.Price, &item.Shop, &updateTime)
 		if err != nil {
 			panic(err)
 		}
@@ -69,6 +71,7 @@ func findMin() string {
 			msg = msg + "\n"
 		}
 	}
+	msg = msg + "\nОбновлено: " + updateTime.Format("02-01-2006")
 	return msg
 }
 
@@ -98,13 +101,16 @@ func StartBot() {
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+		msg.ReplyMarkup = keyboard
 		switch update.Message.Text {
+		case "/start":
+			msg.Text = "Теперь можешь нажать кнопку"
 
-		case "start":
-			msg.ReplyMarkup = keyboard
 			bot.Send(msg)
 		case "Найти колу":
 			msg.Text = findMin()
+			bot.Send(msg)
+		case "Все магазины":
 			bot.Send(msg)
 		default:
 			msg.ReplyToMessageID = update.Message.MessageID
