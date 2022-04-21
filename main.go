@@ -159,7 +159,7 @@ func rowsToStr(rows *sql.Rows) string {
 		msg = msg + str
 		i++
 	}
-	msg = msg + "\nОбновлено: " + updateTime.Format("02-01-2006")
+	msg = msg + "Обновлено: " + updateTime.Format("02-01-2006")
 	return msg
 }
 
@@ -200,6 +200,7 @@ func StartBot() {
 			bot.Send(msg)
 		case "Все магазины":
 			msg.Text = findMinParametrs("all", "nil")
+			log.Println(msg.Text)
 			bot.Send(msg)
 		case "Все магазины cola":
 			msg.Text = findMinParametrs("cola", "nil")
