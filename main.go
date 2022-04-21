@@ -117,7 +117,6 @@ func findMinParametrs(type_cola string, sugar string) string {
 		query = query + "and min_price.sugar=product.sugar "
 	}
 	query = query + "order by product.shop;"
-	log.Println(query)
 	rows, err := db.Query(query)
 	if err != nil {
 		panic(err)
@@ -146,12 +145,10 @@ func rowsToStr(rows *sql.Rows) string {
 	}
 	msg := "Самая дешевая кола сейчас:\n"
 	shop := ""
-	k := 0
 	i := 1
 	for _, item := range items {
 		if item.Shop != shop {
-			k++
-			str := fmt.Sprintf("%d. %s\n", k, item.Shop)
+			str := fmt.Sprintf("---%s\n", item.Shop)
 			msg = msg + str
 			i = 1
 			shop = item.Shop
@@ -201,7 +198,6 @@ func StartBot() {
 			bot.Send(msg)
 		case "Все магазины":
 			msg.Text = findMinParametrs("all", "nil")
-			log.Println(msg.Text)
 			bot.Send(msg)
 		case "Все магазины cola":
 			msg.Text = findMinParametrs("cola", "nil")
