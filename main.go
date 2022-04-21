@@ -117,6 +117,7 @@ func findMinParametrs(type_cola string, sugar string) string {
 		query = query + "and min_price.sugar=product.sugar "
 	}
 	query = query + "order by product.shop;"
+	log.Println(query)
 	rows, err := db.Query(query)
 	if err != nil {
 		panic(err)
