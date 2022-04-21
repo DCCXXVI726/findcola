@@ -75,6 +75,94 @@ func findMin() string {
 	return msg
 }
 
+func findMinParametrs(type_cola string, sugar string) string {
+	query := "select product.name, product.price, product.shop, product.update_time" +
+		"from product INNER JOIN (select DISTINCT min(priceperliter) as my_price, shop "
+	if type_cola != "all" {
+		query = query + ", curr_typecola "
+	}
+	if sugar != "nil" {
+		query = query + ", sugar "
+	}
+
+	if type_cola == "all" && sugar == "nil" {
+		query = query + "from product "
+	} else {
+		query = query + "from (select * from product where "
+		flag := 0
+		if type_cola != "all" {
+			flag = 1
+			query = query + "curr_typecola='" + type_cola + "' "
+		}
+		if sugar != "nil" {
+			if flag == 1 {
+				query = query + " and "
+			}
+			query = query + "sugar=" + sugar
+		}
+		query = query + ") as foo "
+	}
+	query = query + "group by shop "
+	if type_cola != "all" {
+		query = query + ", curr_typecola "
+	}
+	if sugar != "nil" {
+		query = query + ", sugar "
+	}
+	query = query + "order by shop) min_price on min_price.my_price=product.priceperliter and min_price.shop=product.shop "
+	if type_cola != "all" {
+		query = query + "and min_price.curr_typecola=product.curr_typecola "
+	}
+	if sugar != "nil" {
+		query = query + "and min_price.sugar=product.sugar "
+	}
+	query = query + "order by product.shop;"
+	rows, err := db.Query(query)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	return rowsToStr(rows)
+}
+
+func rowsToStr(rows *sql.Rows) string {
+	items := make([]MyItem, 0)
+	updateTime := time.Now()
+	for rows.Next() {
+		var (
+			item   MyItem
+			upTime time.Time
+		)
+
+		err = rows.Scan(&item.Name, &item.Price, &item.Shop, &upTime)
+		if err != nil {
+			panic(err)
+		}
+		items = append(items, item)
+		if updateTime.After(upTime) {
+			updateTime = upTime
+		}
+	}
+	msg := "Самая дешевая кола сейчас:\n"
+	shop := ""
+	k := 0
+	i := 1
+	for _, item := range items {
+		if item.Shop != shop {
+			k++
+			str := fmt.Sprintf("%d. %s\n", k, item.Shop)
+			msg = msg + str
+			i = 1
+			shop = item.Shop
+		}
+		str := fmt.Sprintf("%d. %s - %.2f\n", i, item.Name, item.Price)
+		msg = msg + str
+		i++
+	}
+	msg = msg + "\nОбновлено: " + updateTime.Format("02-01-2006")
+	return msg
+}
+
 func StartBot() {
 	token := os.Getenv("TELEGRAM_TOKEN")
 	if token == "" {
@@ -111,6 +199,16 @@ func StartBot() {
 			msg.Text = findMin()
 			bot.Send(msg)
 		case "Все магазины":
+			msg.Text = findMinParametrs("all", "nil")
+			bot.Send(msg)
+		case "Все магазины cola":
+			msg.Text = findMinParametrs("cola", "nil")
+			bot.Send(msg)
+		case "Все магазины pepsi":
+			msg.Text = findMinParametrs("pepsi", "nil")
+			bot.Send(msg)
+		case "Все магазины cola без сахара":
+			msg.Text = findMinParametrs("cola", "false")
 			bot.Send(msg)
 		default:
 			msg.ReplyToMessageID = update.Message.MessageID
