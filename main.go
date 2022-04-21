@@ -76,7 +76,7 @@ func findMin() string {
 }
 
 func findMinParametrs(type_cola string, sugar string) string {
-	query := "select product.name, product.price, product.shop, product.update_time" +
+	query := "select product.name, product.price, product.shop, product.update_time " +
 		"from product INNER JOIN (select DISTINCT min(priceperliter) as my_price, shop "
 	if type_cola != "all" {
 		query = query + ", curr_typecola "
